@@ -91,6 +91,10 @@ def update(entity):
     myWorld.update(entity, 'x', xValue)
     myWorld.update(entity, 'y', yValue)
 
+    # add remaining properties
+    for key in requestBody:
+        myWorld.update(entity, key, requestBody.get(key))
+
     return myWorld.get(entity)
 
 @app.route("/world", methods=['POST','GET'])    

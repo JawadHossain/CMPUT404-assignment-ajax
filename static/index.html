@@ -31,27 +31,19 @@ var context = canvas.getContext("2d");
 var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
-
-function sendJSONXMLHTTPRequest(url, objects, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState==4) {
-            try {
-                if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
-                }
-            } 
-            catch(e) {
-                alert('Error: ' + e.name);
-            }
-        }
-    };
-    //XXX: POST to a URL
-    //XXX: set the mimetype and the accept headers!
-    // Remember to use application/json !
+/**
+ * Sends HTTP request based on parameters using fetch api
+ * */
+function fetchJSON(url, headers={}, method="GET", body=null) {
+    // ref: https://stackoverflow.com/questions/40385133/retrieve-data-from-a-readablestream-object - Ashley 'CptLemming' Wilson - Nov 3 '16 at 13:51
+    return fetch(url, {
+        method,
+        body,
+        headers
+    }).then(response => {
+        return response.json(); // return a Promise
+    })
 }
-
 
 world = {};
 
@@ -134,11 +126,19 @@ function getPosition(e) {
 }
 
 
-function addEntity(entity, data) {
+async function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
 
+    //XXX: Send a XHTML Request that updates the entity you just  modified!
+    let res = await fetchJSON(
+        `/entity/${entity}`,
+        {
+            'Content-Type': 'application/json'
+        },
+        method="POST",
+        JSON.stringify(data)
+    )
 }
 
 var counter = 0;
@@ -260,9 +260,20 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 });
 
 
-function update() {
+async function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
-    drawFrame();
+
+    let res = await fetchJSON(
+        '/world'
+    )
+    
+    // update canvas if there's change
+    if (JSON.stringify(res) !== JSON.stringify(world)){
+        world = res;
+        drawNextFrame();
+        drawFrame();
+
+    }
 }
 
 // 30 frames per second
